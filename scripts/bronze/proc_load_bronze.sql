@@ -1,7 +1,21 @@
-/* Gets all the names of the tables in the bronze schema */ 
+/*
+===========================================================================
+Stored Procedure: Load Bronze Layer (Source -> Bronze)
+===========================================================================
+Script Purpose:
+	This stored procedure loads data into the bronze schema from external CSV files.
+	It performs the following actions:
+	- Truncates the bronze tables before loading data
+	- Uses the `BULK INSERT` command to load data from CSV files to bronze tables
+
+===========================================================================
+*/
+
 CREATE OR ALTER PROCEDURE bronze.load_bronze AS
 BEGIN
 	BEGIN TRY
+
+		-- Gets all the names of the tables in the bronze schema
 		DECLARE @table_names TABLE (ID INT, Name NVARCHAR(64)); 
 
 		INSERT INTO @table_names
@@ -22,12 +36,12 @@ BEGIN
 		DECLARE @file_path_prefix NVARCHAR(3) = ''; -- Whether the source is from CRM or ERP
 		DECLARE @total_time INT = 0;
 
-		/* Iterates through the tables */
+		-- Iterates through the tables
 		WHILE @count <= 6
 		BEGIN
 			DECLARE @table_name NVARCHAR (64) = (SELECT Name FROM @table_names WHERE ID = @count); 
 
-			/* Only prints out a new section if the section has changed. I.e. crm to erp */
+			-- Only prints out a new section if the section has changed. I.e. CRM -> ERP
 			DECLARE @temp_prefix NVARCHAR(3) = (SELECT TOP 1 * FROM STRING_SPLIT(@table_name, '_'));
 			IF @file_path_prefix != @temp_prefix
 			BEGIN
@@ -38,10 +52,10 @@ BEGIN
 				PRINT '=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=' + CHAR(13);
 			END
 
-			/* Obtains the file name of the data source */
+			-- Obtains the file name of the data source
 			DECLARE @file_name NVARCHAR(32) = (SELECT SUBSTRING(@table_name, CHARINDEX('_', @table_name) + 1, LEN(@table_name)) + '.csv');
 			
-			/* Truncates the table before bulk loading the data from the file source into the appropriate table */
+			-- Truncates the table before bulk loading the data from the file source into the appropriate table
 			DECLARE @statement NVARCHAR(MAX) = '
 			PRINT ''--------------------------------------------'';
 
@@ -91,4 +105,3 @@ BEGIN
 		PRINT '============================================';
 	END CATCH
 END
-
